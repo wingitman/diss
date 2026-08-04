@@ -1,0 +1,37 @@
+# diss configuration
+[keybinds]
+up = "k"
+down = "j"
+left = "h"
+right = "l"
+page_up = "pgup"
+page_down = "pgdown"
+first = "g"
+last = "G"
+confirm = "enter"
+cancel = "esc"
+quit = "q"
+help = "?"
+open_config = "o"
+refresh = "r"
+inspect = "i"
+burn = "b"
+audio_project = "a"
+data_project = "d"
+copy = "y"
+updates = "U"
+install_update = "I"
+rollback = "R"
+
+[ui]
+show_hints = true
+show_logo = true
+
+[updates]
+disable_checks = false
+repo_path = ""
+terminal = ""
+current_commit = ""
+
+# Set this to the source checkout used for update/history inspection.
+# repo_path = "/path/to/diss"

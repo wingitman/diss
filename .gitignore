@@ -1,0 +1,8 @@
+# Build output
+diss
+diss.exe
+releases/
+
+# Local configuration and runtime state
+config.toml
+.local/
