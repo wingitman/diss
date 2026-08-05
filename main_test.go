@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/wingitman/diss/internal/browser"
 	"github.com/wingitman/diss/internal/config"
 	"github.com/wingitman/diss/internal/disc"
 	"github.com/wingitman/diss/internal/project"
@@ -82,5 +83,61 @@ func TestMouseRowsStayInsideRenderedPanels(t *testing.T) {
 		if row.y < l.left.y || row.y >= l.left.y+l.left.height && row.y < l.right.y || row.y >= l.right.y+l.right.height {
 			t.Fatalf("row escaped panel bounds: %+v", row)
 		}
+	}
+}
+
+func TestAppendUniqueTracksPreservesOrder(t *testing.T) {
+	existing := []project.Track{{Path: "first.mp3"}}
+	got := appendUniqueTracks(existing, []project.Track{{Path: "second.mp3"}, {Path: "first.mp3"}, {Path: "third.mp3"}})
+	if len(got) != 3 || got[1].Path != "second.mp3" || got[2].Path != "third.mp3" {
+		t.Fatalf("unexpected ordered tracks: %+v", got)
+	}
+}
+
+func TestBrowserBatchAddClearsMarks(t *testing.T) {
+	m := model{config: configForTest(), projectMode: "data", viewMode: "browser", marked: map[string]bool{"one.txt": true, "two.txt": true}, browseItems: []browser.Entry{{Path: "one.txt"}, {Path: "two.txt"}}}
+	m.addMarked()
+	if len(m.dataPaths) != 2 || len(m.marked) != 0 || m.viewMode != "project" {
+		t.Fatalf("batch add failed: paths=%v marked=%v mode=%s", m.dataPaths, m.marked, m.viewMode)
+	}
+}
+
+func TestVisibleWindowFollowsCursor(t *testing.T) {
+	start, end := visibleWindow(100, 27, 10)
+	if start != 20 || end != 30 {
+		t.Fatalf("got window %d:%d, want 20:30", start, end)
+	}
+	start, end = visibleWindow(7, 6, 10)
+	if start != 0 || end != 7 {
+		t.Fatalf("got short window %d:%d, want 0:7", start, end)
+	}
+}
+
+func TestSplitChooserOutputSupportsMultiplePaths(t *testing.T) {
+	paths := splitChooserOutput("/tmp/one.mp3\n/tmp/two.mp3\r\n")
+	if len(paths) != 2 || paths[1] != "/tmp/two.mp3" {
+		t.Fatalf("unexpected chooser paths: %v", paths)
+	}
+}
+
+func TestConfirmationAcceptsEnterWithCustomConfirmKey(t *testing.T) {
+	m := model{config: configForTest(), confirm: true, confirmMode: "burn", projectMode: "audio"}
+	m.config.Keybinds.Confirm = "y"
+	m.handleKey("enter")
+	if !m.busy || m.confirm {
+		t.Fatalf("enter did not confirm burn: busy=%v confirm=%v", m.busy, m.confirm)
+	}
+}
+
+func TestSelectedDriveDoesNotUseProjectCursor(t *testing.T) {
+	m := model{
+		drives:        []disc.Drive{{Path: "/dev/sr0"}},
+		selected:      11,
+		driveSelected: 0,
+		focus:         1,
+	}
+	drive, ok := m.selectedDrive()
+	if !ok || drive.Path != "/dev/sr0" {
+		t.Fatalf("selected drive = %+v, ok=%v", drive, ok)
 	}
 }

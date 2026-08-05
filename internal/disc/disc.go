@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -18,14 +19,24 @@ type Drive struct {
 }
 
 type Media struct {
-	Present   bool
-	Kind      string
-	State     string
-	Writable  bool
-	Finalized bool
-	Sessions  int
-	Tracks    int
-	Details   []string
+	Present    bool
+	Kind       string
+	State      string
+	Writable   bool
+	Finalized  bool
+	Sessions   int
+	Tracks     int
+	Details    []string
+	TracksInfo []Track
+	Warnings   []string
+}
+
+type Track struct {
+	Number   int
+	StartLBA int
+	EndLBA   int
+	Duration float64
+	Title    string
 }
 
 type Runner interface {
@@ -101,13 +112,50 @@ func (s Service) Inspect(ctx context.Context, path string) (Media, error) {
 	}
 	info, infoErr := s.runner.Run(ctx, "cdrecord", "-minfo", "dev="+path)
 	if infoErr != nil {
+		media.Warnings = append(media.Warnings, strings.TrimSpace(string(info)))
 		return media, nil
 	}
 	media.Details = strings.Split(strings.TrimSpace(string(info)), "\n")
 	media.Sessions = numberAfter(string(info), "Number of Sessions:")
 	media.Tracks = numberAfter(string(info), "Number of Tracks:")
 	media.Finalized = strings.Contains(string(info), "Disk status: complete") || strings.Contains(string(info), "session status: complete")
+	toc, tocErr := s.runner.Run(ctx, "cdrecord", "-toc", "dev="+path)
+	if tocErr != nil {
+		media.Warnings = append(media.Warnings, strings.TrimSpace(string(toc)))
+	} else {
+		media.TracksInfo = parseTOC(string(toc))
+	}
 	return media, nil
+}
+
+var tocTrack = regexp.MustCompile(`track:\s+(\d+)\s+lba:\s+(\d+)`)
+var tocLeadout = regexp.MustCompile(`track:lout\s+lba:\s+(\d+)`)
+
+func parseTOC(text string) []Track {
+	matches := tocTrack.FindAllStringSubmatch(text, -1)
+	tracks := make([]Track, 0, len(matches))
+	for index, match := range matches {
+		if len(match) < 3 {
+			continue
+		}
+		start, _ := strconv.Atoi(match[2])
+		end := start
+		if index+1 < len(matches) {
+			end, _ = strconv.Atoi(matches[index+1][2])
+		} else if leadout := tocLeadout.FindStringSubmatch(text); len(leadout) > 1 {
+			end, _ = strconv.Atoi(leadout[1])
+		}
+		number, _ := strconv.Atoi(match[1])
+		tracks = append(tracks, Track{Number: number, StartLBA: start, EndLBA: end, Duration: float64(maxInt(0, end-start)) / 75})
+	}
+	return tracks
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 func numberAfter(text, prefix string) int {

@@ -22,6 +22,16 @@ copy = "y"
 updates = "U"
 install_update = "I"
 rollback = "R"
+browse = "n"
+mark = "space"
+add_marked = "a"
+select_all = "A"
+remove = "x"
+parent = "backspace"
+open_explorer = "e"
+choose_files = "f"
+choose_directory = "D"
+change_directory = "C"
 
 [ui]
 show_hints = true

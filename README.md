@@ -13,6 +13,7 @@ Built with Go, Bubble Tea, and Lip Gloss. The project was created with
 diss ~/Music/SUNO                 # audio-CD project
 diss song-one.mp3 song-two.mp3   # audio-CD project
 diss --data ~/Documents           # data-disc project
+diss                                # open the file browser
 ```
 
 The main screen shows detected optical drives, inserted media, project
@@ -33,6 +34,13 @@ All keys are remappable in `~/.config/delbysoft/diss.toml`. Defaults include:
 | `Enter` | Inspect the selected drive or confirm a burn |
 | `i` | Reset/show inspection output |
 | `a` / `d` | Select audio/data project |
+| `n` | Open the file browser |
+| `Space` | Mark/unmark the focused file |
+| `A` | Mark all compatible files in the directory |
+| `a` | Add all marked files to the project |
+| `Backspace` | Browse the parent directory |
+| `f` | Open a native multi-file chooser and append the results to the project |
+| `x` | Remove the focused project item |
 | `b` | Open the destructive burn confirmation |
 | `y` | Copy the selected path |
 | `o` | Open and reload the TOML configuration |
@@ -51,11 +59,20 @@ are bounded by tests.
 
 - Inspects optical drives with `lsblk`, `udevadm`, and `cdrecord`.
 - Reads media type, blank/finalized state, sessions, tracks, and raw details.
+- Displays existing disc audio tracks beside newly selected project tracks.
 - Converts MP3/WAV/FLAC sources to CD audio with `ffmpeg`.
 - Burns finalized audio CDs with `cdrecord`.
+- Appends audio to an open multisession audio disc with `cdrecord -multi`.
 - Creates or appends DVD/BD data sessions with `growisofs`.
 - Refuses to treat finalized media as appendable.
 - Requires explicit confirmation before every write.
+- Streams burn progress and tool output, with cancellation through `q`, `Ctrl+C`, or `Esc`.
+- Verifies the disc after writing and reports completion or failure in the status/log area.
+
+Finalized audio CDs cannot be extended in place. `diss` reports that state and
+refuses a direct append rather than risking a failed write. Existing tracks
+are still shown from the disc TOC; replacement-disc ripping is a separate
+workflow because it requires a new blank disc.
 
 Linux is the first complete native backend. The domain interfaces and build
 targets are cross-platform; macOS and Windows backends can be added without
@@ -82,6 +99,9 @@ The TOML file is created on first launch and missing keys are migrated without
 discarding existing values. Opening it with `o` runs the configured editor
 without blocking the event loop and reloads both key handling and hints when
 the editor exits.
+
+On KDE/Linux, the native multi-file chooser uses `kdialog` and falls back to
+`zenity`. Repeating `f` appends more selections to the existing project.
 
 `U` performs a non-blocking fetch and source/update-state check, including dirty
 checkout status and recent history. `I` and `R` require a clean checkout and
