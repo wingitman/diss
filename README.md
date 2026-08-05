@@ -1,8 +1,7 @@
 # diss
 
 `diss` is a Delbysoft terminal UI for inspecting, composing, extending, and
-burning optical media. The name is intentional: when you diss someone, you
-burn them.
+burning optical media.
 
 Built with Go, Bubble Tea, and Lip Gloss. The project was created with
 `delbyapps new` and follows the shared Delbysoft TUI blueprint.
