@@ -89,9 +89,13 @@ make install
 ```
 
 `build-all` creates Linux amd64/arm64, macOS amd64/arm64, and Windows amd64
-artifacts under `releases/`. `install.sh` builds from source when Go exists and
-otherwise selects only the matching release artifact. `install.ps1` provides
-the equivalent Windows behavior.
+artifacts under `releases/`; it does not change the installed command. `make
+install` builds the current checkout from source when Go exists and atomically
+replaces the command resolved from `PATH` (or `$HOME/.local/bin/diss` when no
+existing command is found). When Go is unavailable, it installs only the exact
+matching release artifact and fails if that artifact is missing. The installer
+reports PATH conflicts so an older binary cannot be mistaken for the newly
+built one. `install.ps1` provides the equivalent Windows behavior.
 
 ## Updates and configuration
 
